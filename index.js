@@ -3,10 +3,14 @@ import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
 import dotenv from "dotenv";
 import { Readable } from "stream";
+import cors from "cors";
+
 
 dotenv.config();
 const app = express();
 const upload = multer();
+
+app.use(cors()); 
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
