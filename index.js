@@ -29,32 +29,35 @@ const uploadRateLimiter = rateLimit({
 });
 
 
-
-app.post("/upload", uploadRateLimiter, upload.single("file"), async (req, res) => {
+app.post("/upload", uploadRateLimiter, upload.array("files", 5), async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+    if (!req.files || req.files.length === 0)
+      return res.status(400).json({ error: "No files uploaded" });
 
-    const buffer = req.file.buffer;
-    const stream = Readable.from(buffer);
+    const uploadPromises = req.files.map((file) => {
+      const buffer = file.buffer;
+      const stream = Readable.from(buffer);
 
-    const uploadedUrl = await new Promise((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        { folder: "auction_images" },
-        (error, result) => {
-          if (error) return reject(error);
-          if (!result?.secure_url) return reject(new Error("No secure URL"));
-          resolve(result.secure_url);
-        }
-      );
-
-      stream.pipe(uploadStream);
+      return new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          { folder: "auction_images" },
+          (error, result) => {
+            if (error) return reject(error);
+            if (!result?.secure_url) return reject(new Error("No secure URL"));
+            resolve(result.secure_url);
+          }
+        );
+        stream.pipe(uploadStream);
+      });
     });
 
-    res.json({ url: uploadedUrl });
+    const uploadedUrls = await Promise.all(uploadPromises);
+    res.json({ urls: uploadedUrls });
   } catch (error) {
     res.status(500).json({ error: error.message || "Upload failed" });
   }
 });
+
 
 app.get("/", (req, res) => {
   res.send("✅ Cloudinary Upload API is live!");
