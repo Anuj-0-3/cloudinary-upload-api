@@ -10,8 +10,9 @@ dotenv.config();
 const app = express();
 const upload = multer();
 
-// 🔴 TRUST PROXY for Express to recognize X-Forwarded-For header
-app.set("trust proxy", true);
+// TRUST PROXY for Express to recognize X-Forwarded-For header
+app.set("trust proxy", 1);
+
 
 // Enable cross-origin resource sharing (CORS)
 app.use(cors());
